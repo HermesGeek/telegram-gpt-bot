@@ -1,10 +1,10 @@
 import os
 import logging
+import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 import openai
 from dotenv import load_dotenv
-import asyncio
 
 # Загружаем переменные окружения из .env
 load_dotenv()
@@ -18,23 +18,23 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Настраиваем OpenAI API
-openai.api_key = OPENAI_API_KEY
+# Инициализируем клиент OpenAI
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Обработчик команды /start
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
-    await message.answer("Привет! Я ГикБот 🤖 Задавай вопросы!")
+    await message.answer("Привет! Я ГикБот 🤖\nЗадавай мне вопросы о технике!")
 
 # Обработчик сообщений
 @dp.message()
 async def chat_with_gpt(message: types.Message):
     try:
-        response = openai.ChatCompletion.create(  # ✅ Правильный вызов API
+        response = client.chat.completions.create(  # ✅ Новый способ вызова API
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": message.text}],
         )
-        reply = response["choices"][0]["message"]["content"]
+        reply = response.choices[0].message.content
         await message.answer(reply)
 
     except Exception as e:
