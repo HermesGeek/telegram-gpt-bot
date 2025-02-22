@@ -30,12 +30,13 @@ async def start_handler(message: types.Message):
 @dp.message()
 async def chat_with_gpt(message: types.Message):
     try:
-        response = openai.client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": message.text}],
-)
-reply = response.choices[0].message.content
+        response = openai.ChatCompletion.create(  # ✅ Правильный вызов API
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": message.text}],
+        )
+        reply = response["choices"][0]["message"]["content"]
         await message.answer(reply)
+
     except Exception as e:
         logging.error(f"Ошибка: {e}")
         await message.answer("Ошибка при запросе к OpenAI 😢")
