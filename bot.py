@@ -1,47 +1,45 @@
-import logging
-from aiogram import Bot, Dispatcher, types
-from aiogram.utils.executor import start_webhook
-from aiohttp import web
 import os
+import asyncio
+from aiohttp import web
+from aiogram import Bot, Dispatcher, types
 
-# Твой токен бота
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-WEBHOOK_HOST = "https://telegram-gpt-bot-hwnk.onrender.com"  # Замени на свой Render URL!
-WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+# URL, по которому Telegram будет отправлять обновления (замените на ваш URL на Render)
+WEBHOOK_PATH = f"/webhook/{TOKEN}"
+WEBHOOK_URL = f"https://your-app-name.onrender.com{WEBHOOK_PATH}"
 
-# Настройки сервера
-WEBAPP_HOST = "0.0.0.0"
-WEBAPP_PORT = int(os.getenv("PORT", 8000))
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
 
-# Создаём бота и диспетчер
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+# Регистрируем хэндлеры, например:
+@dp.message()
+async def echo(message: types.Message):
+    await message.answer(f"Вы сказали: {message.text}")
 
-# Логирование
-logging.basicConfig(level=logging.INFO)
-
-# Обработчик команды /start
-@dp.message_handler(commands=["start"])
-async def start_cmd(message: types.Message):
-    await message.reply("Привет! Я работаю через Webhook.")
-
-# Функция при старте
-async def on_startup(dispatcher):
+async def on_startup(app):
     await bot.set_webhook(WEBHOOK_URL)
-    print(f"Webhook установлен: {WEBHOOK_URL}")
+    print("Webhook установлен")
 
-# Функция при выключении
-async def on_shutdown(dispatcher):
+async def on_shutdown(app):
     await bot.delete_webhook()
+    await bot.session.close()
+    print("Webhook удалён")
 
-# Запускаем webhook-сервер
+async def handle_webhook(request: web.Request):
+    data = await request.json()
+    update = types.Update(**data)
+    await dp.feed_update(update)
+    return web.Response()
+
+def main():
+    app = web.Application()
+    app.router.add_post(WEBHOOK_PATH, handle_webhook)
+    app.on_startup.append(on_startup)
+    app.on_shutdown.append(on_shutdown)
+    
+    # Render задаёт порт через переменную окружения PORT
+    port = int(os.environ.get("PORT", 8080))
+    web.run_app(app, host="0.0.0.0", port=port)
+
 if __name__ == "__main__":
-    start_webhook(
-        dispatcher=dp,
-        webhook_path=WEBHOOK_PATH,
-        on_startup=on_startup,
-        on_shutdown=on_shutdown,
-        host=WEBAPP_HOST,
-        port=WEBAPP_PORT,
-    )
+    asyncio.run(main())
