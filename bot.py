@@ -6,7 +6,7 @@ from aiogram import Bot, Dispatcher, types
 from aiohttp import web
 
 # Получаем токен бота (замените YOUR_TELEGRAM_BOT_TOKEN на настоящий токен или задайте переменную окружения)
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7952421114:AAH6aaqUxWpFpU70yZazgVuchDI9hHKmGfI")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
@@ -54,13 +54,13 @@ async def on_shutdown(app):
 async def handle_webhook(request: web.Request):
     data = await request.json()
     update = types.Update(**data)
-    # Передаем объект обновления, используя именованный аргумент
-    await dp.feed_update(update=update)
+    # Передаем экземпляр бота как обязательный аргумент
+    await dp.feed_update(bot, update)
     return web.Response(text="OK")
 
 # Обработчик GET-запросов для корневого URL (приветственное сообщение)
 async def handle_root(request: web.Request):
-    return web.Response(text="Привет! Это сервис Telegram-бота. Для общения используйте Telegram.")
+    return web.Response(text="Привет! Это сервис Telegram-бота для технической помощи.")
 
 def main():
     app = web.Application()
