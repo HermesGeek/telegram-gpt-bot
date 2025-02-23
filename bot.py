@@ -6,7 +6,10 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.exceptions import TelegramForbiddenError
 from aiohttp import web
 
-# Получаем токен бота (замените YOUR_TELEGRAM_BOT_TOKEN на настоящий токен или задайте переменную окружения)
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+
+# Получаем токен бота (замените на настоящий токен или задайте переменную окружения)
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7952421114:AAH6aaqUxWpFpU70yZazgVuchDI9hHKmGfI")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -39,6 +42,7 @@ async def handle_message(message: types.Message):
         pass
 
     answer = await ask_chatgpt(user_text)
+    logging.info("Ответ от API: %s", answer)
     try:
         await message.reply(answer)
     except TelegramForbiddenError:
