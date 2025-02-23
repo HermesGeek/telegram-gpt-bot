@@ -54,12 +54,13 @@ async def on_shutdown(app):
 async def handle_webhook(request: web.Request):
     data = await request.json()
     update = types.Update(**data)
-    await dp.process_update(update)  # Обработка обновления
+    # Передаем объект обновления, используя именованный аргумент
+    await dp.feed_update(update=update)
     return web.Response(text="OK")
 
 # Обработчик GET-запросов для корневого URL (приветственное сообщение)
 async def handle_root(request: web.Request):
-    return web.Response(text="Привет! Это сервис Telegram-бота.Напишите свой вопрос.")
+    return web.Response(text="Привет! Это сервис Telegram-бота. Для общения используйте Telegram.")
 
 def main():
     app = web.Application()
