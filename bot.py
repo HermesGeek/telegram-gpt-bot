@@ -12,7 +12,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 # Функция для отправки запроса на ChatGPT и получения ответа
-aasync def ask_chatgpt(prompt: str) -> str:
+async def ask_chatgpt(prompt: str) -> str:
     url = "https://chatgpt.com/g/g-67b9c92040e48191a87443fda19625ea-gikbot"
     payload = {"prompt": prompt}
     try:
