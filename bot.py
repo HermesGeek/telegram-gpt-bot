@@ -3,6 +3,7 @@ import aiohttp
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
+from aiogram.exceptions import TelegramForbiddenError
 from aiohttp import web
 
 # Получаем токен бота (замените YOUR_TELEGRAM_BOT_TOKEN на настоящий токен или задайте переменную окружения)
@@ -29,15 +30,24 @@ async def ask_chatgpt(prompt: str) -> str:
 @dp.message()
 async def handle_message(message: types.Message):
     user_text = message.text
-    await message.reply("Подождите, обрабатываю ваш запрос...")
+    try:
+        await message.reply("Подождите, обрабатываю ваш запрос...")
+    except TelegramForbiddenError:
+        # Если бот заблокирован пользователем, игнорируем отправку
+        pass
+
     answer = await ask_chatgpt(user_text)
-    await message.reply(answer)
+    try:
+        await message.reply(answer)
+    except TelegramForbiddenError:
+        # Если бот заблокирован пользователем, игнорируем отправку
+        pass
 
 # Настройка webhook: формируем путь и URL для приема обновлений
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
-# Здесь укажите правильный домен вашего приложения на Render.
-# Можно задать через переменную окружения RENDER_EXTERNAL_URL.
-DOMAIN = os.environ.get("RENDER_EXTERNAL_URL", "https://your-app-name.onrender.com")
+# Укажите правильный домен вашего приложения на Render.
+# Либо задайте переменную окружения RENDER_EXTERNAL_URL, например: "https://telegram-gpt-bot-hwnk.onrender.com"
+DOMAIN = os.environ.get("RENDER_EXTERNAL_URL", "https://telegram-gpt-bot-hwnk.onrender.com")
 WEBHOOK_URL = DOMAIN + WEBHOOK_PATH
 
 # Функция, выполняемая при запуске приложения: устанавливаем webhook
@@ -54,13 +64,13 @@ async def on_shutdown(app):
 async def handle_webhook(request: web.Request):
     data = await request.json()
     update = types.Update(**data)
-    # Передаем экземпляр бота как обязательный аргумент
+    # Передаём объект обновления вместе с ботом
     await dp.feed_update(bot, update)
     return web.Response(text="OK")
 
 # Обработчик GET-запросов для корневого URL (приветственное сообщение)
 async def handle_root(request: web.Request):
-    return web.Response(text="Привет! Это сервис Telegram-бота для технической помощи.")
+    return web.Response(text="Привет! Это сервис Telegram-бота.Я создан для помощи вам в технических вопросах.")
 
 def main():
     app = web.Application()
