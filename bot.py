@@ -14,10 +14,11 @@ dp = Dispatcher()
 # Функция для отправки запроса на ChatGPT и получения ответа
 async def ask_chatgpt(prompt: str) -> str:
     url = "https://chatgpt.com/g/g-67b9c92040e48191a87443fda19625ea-gikbot"
-    payload = {"prompt": prompt}  # Данные, которые отправляем на сервер
+    payload = {"prompt": prompt}
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(url, json=payload) as response:
+            # Используем GET вместо POST и передаем данные через параметры запроса
+            async with session.get(url, params=payload) as response:
                 if response.status == 200:
                     data = await response.json()
                     return data.get("response", "Ответ не найден.")
@@ -25,6 +26,7 @@ async def ask_chatgpt(prompt: str) -> str:
                     return f"Ошибка: сервер вернул статус {response.status}"
     except Exception as e:
         return f"Произошла ошибка: {e}"
+
 
 # Обработчик входящих сообщений от пользователей Telegram
 @dp.message()
