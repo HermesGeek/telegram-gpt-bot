@@ -1,45 +1,39 @@
 import os
+import aiohttp
 import asyncio
-from aiohttp import web
 from aiogram import Bot, Dispatcher, types
 
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-# URL, по которому Telegram будет отправлять обновления (замените на ваш URL на Render)
-WEBHOOK_PATH = f"/webhook/{TOKEN}"
-WEBHOOK_URL = f"https://your-app-name.onrender.com{WEBHOOK_PATH}"
-
+# Замените YOUR_TELEGRAM_BOT_TOKEN на настоящий токен или установите переменную окружения TELEGRAM_BOT_TOKEN.
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7952421114:AAH6aaqUxWpFpU70yZazgVuchDI9hHKmGfI")
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
-# Регистрируем хэндлеры, например:
+# Функция для отправки запроса на ChatGPT и получения ответа
+async def ask_chatgpt(prompt: str) -> str:
+    url = "https://chatgpt.com/g/g-67b9c92040e48191a87443fda19625ea-gikbot"
+    payload = {"prompt": prompt}  # Данные для запроса
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=payload) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("response", "Ответ не найден.")
+                else:
+                    return f"Ошибка: сервер вернул статус {response.status}"
+    except Exception as e:
+        return f"Произошла ошибка: {e}"
+
+# Обработчик входящих сообщений
 @dp.message()
-async def echo(message: types.Message):
-    await message.answer(f"Вы сказали: {message.text}")
+async def handle_message(message: types.Message):
+    user_text = message.text
+    await message.reply("Подождите, обрабатываю ваш запрос...")
+    answer = await ask_chatgpt(user_text)
+    await message.reply(answer)
 
-async def on_startup(app):
-    await bot.set_webhook(WEBHOOK_URL)
-    print("Webhook установлен")
-
-async def on_shutdown(app):
-    await bot.delete_webhook()
-    await bot.session.close()
-    print("Webhook удалён")
-
-async def handle_webhook(request: web.Request):
-    data = await request.json()
-    update = types.Update(**data)
-    await dp.feed_update(update)
-    return web.Response()
-
-def main():
-    app = web.Application()
-    app.router.add_post(WEBHOOK_PATH, handle_webhook)
-    app.on_startup.append(on_startup)
-    app.on_shutdown.append(on_shutdown)
-    
-    # Render задаёт порт через переменную окружения PORT
-    port = int(os.environ.get("PORT", 8080))
-    web.run_app(app, host="0.0.0.0", port=port)
+# Функция для запуска бота в режиме polling
+async def main():
+    await dp.start_polling(bot, skip_updates=True)
 
 if __name__ == "__main__":
     asyncio.run(main())
