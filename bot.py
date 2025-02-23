@@ -66,12 +66,13 @@ async def on_shutdown(app):
     await bot.session.close()
 
 # Обработчик входящих POST-запросов от Telegram (webhook)
-async def handle_webhook(request: web.Request):
+aasync def handle_webhook(request: web.Request):
     data = await request.json()
+    logging.info("Получено обновление: %s", data)
     update = types.Update(**data)
-    # Передаём объект обновления вместе с ботом
     await dp.feed_update(bot, update)
     return web.Response(text="OK")
+
 
 # Обработчик GET-запросов для корневого URL (приветственное сообщение)
 async def handle_root(request: web.Request):
