@@ -3,11 +3,14 @@ import aiohttp
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.exceptions import TelegramForbiddenError
+from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 from aiohttp import web
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
+
+# Максимальная длина сообщения Telegram (с запасом)
+MAX_MESSAGE_LENGTH = 4096
 
 # Получаем токен бота (замените на настоящий токен или задайте переменную окружения)
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "7952421114:AAH6aaqUxWpFpU70yZazgVuchDI9hHKmGfI")
@@ -43,14 +46,17 @@ async def handle_message(message: types.Message):
 
     answer = await ask_chatgpt(user_text)
     logging.info("Ответ от API: %s", answer)
+    if len(answer) > MAX_MESSAGE_LENGTH:
+        answer = answer[:MAX_MESSAGE_LENGTH - 50] + "\n\n[Обрезано, ответ слишком длинный]"
     try:
         await message.reply(answer)
     except TelegramForbiddenError:
         pass
+    except TelegramBadRequest as bad_req:
+        logging.error("TelegramBadRequest: %s", bad_req)
 
 # Настройка webhook: формируем путь и URL для приема обновлений
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
-# Задайте правильный домен вашего приложения (либо через переменную RENDER_EXTERNAL_URL)
 DOMAIN = os.environ.get("RENDER_EXTERNAL_URL", "https://telegram-gpt-bot-hwnk.onrender.com")
 WEBHOOK_URL = DOMAIN + WEBHOOK_PATH
 
