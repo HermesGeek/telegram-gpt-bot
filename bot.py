@@ -51,7 +51,7 @@ async def on_shutdown(app):
 async def handle_webhook(request: web.Request):
     data = await request.json()
     update = types.Update(**data)
-    await dp.feed_update(update)
+    await dp.process_update(update)  # Изменено с feed_update на process_update
     return web.Response(text="OK")
 
 def main():
