@@ -1,49 +1,47 @@
-import os
 import logging
-import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import Command
-import openai
-from dotenv import load_dotenv
+from aiogram.utils.executor import start_webhook
+from aiohttp import web
+import os
 
-# Загружаем переменные окружения из .env
-load_dotenv()
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Твой токен бота
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+WEBHOOK_HOST = "https://telegram-gpt-bot-hwnk.onrender.com"  # Замени на свой Render URL!
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
-# Настраиваем логирование
+# Настройки сервера
+WEBAPP_HOST = "0.0.0.0"
+WEBAPP_PORT = int(os.getenv("PORT", 8000))
+
+# Создаём бота и диспетчер
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot)
+
+# Логирование
 logging.basicConfig(level=logging.INFO)
 
-# Инициализируем бота и диспетчер
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
-
-# Инициализируем клиент OpenAI
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
 # Обработчик команды /start
-@dp.message(Command("start"))
-async def start_handler(message: types.Message):
-    await message.answer("Привет! Я ГикБот 🤖\nЗадавай мне вопросы о технике!")
+@dp.message_handler(commands=["start"])
+async def start_cmd(message: types.Message):
+    await message.reply("Привет! Я работаю через Webhook.")
 
-# Обработчик сообщений
-@dp.message()
-async def chat_with_gpt(message: types.Message):
-    try:
-        response = client.chat.completions.create(  # ✅ Новый способ вызова API
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": message.text}],
-        )
-        reply = response.choices[0].message.content
-        await message.answer(reply)
+# Функция при старте
+async def on_startup(dispatcher):
+    await bot.set_webhook(WEBHOOK_URL)
+    print(f"Webhook установлен: {WEBHOOK_URL}")
 
-    except Exception as e:
-        logging.error(f"Ошибка: {e}")
-        await message.answer("Ошибка при запросе к OpenAI 😢")
+# Функция при выключении
+async def on_shutdown(dispatcher):
+    await bot.delete_webhook()
 
-# Запуск бота
-async def main():
-    await dp.start_polling(bot)
-
+# Запускаем webhook-сервер
 if __name__ == "__main__":
-    asyncio.run(main())
+    start_webhook(
+        dispatcher=dp,
+        webhook_path=WEBHOOK_PATH,
+        on_startup=on_startup,
+        on_shutdown=on_shutdown,
+        host=WEBAPP_HOST,
+        port=WEBAPP_PORT,
+    )
